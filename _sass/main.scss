@@ -1,11 +1,17 @@
 
 .row {
   display: flex;
+  justify-content: space-between;
 }
 
 .column {
   flex: 50%;
 }
+
+.columnsmall {
+  flex: 45%;
+}
+
 
 .center {
   display: flex;

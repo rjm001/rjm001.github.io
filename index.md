@@ -10,12 +10,12 @@ layout: home
 
 
 <div class="row">
-  <div class="column">
+  <div class="columnsmall">
       <img src="{{ site.baseurl }}/assets/pictures/RyanMartinPhoto1.jpg" style="max-width: 200px;"
       alt="Ryan Martin" />
 
   </div>
-  <div class="column">
+  <div class="columnsmall">
     <div class="center">
     <p>
       I am a Senior Economist in the Bank of Canada's Currency department. I am interested in econometrics, industrial organization (the economics of competition), the economics of digitization and financial economics. <br>
