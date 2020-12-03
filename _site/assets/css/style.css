@@ -321,12 +321,18 @@ table td { border: 1px solid #e8e8e8; }
 /** Grid helpers */
 @media screen and (min-width: 800px) { .one-half { width: calc(50% - (30px / 2)); } }
 
+.article2cl { -webkit-columns: 2 200px; -moz-columns: 2 200px; columns: 2 200px; }
+
+.article1col { -webkit-column-count: 1; -moz-column-count: 1; column-count: 1; }
+
 .row { display: flex; justify-content: space-between; }
 
 .column { flex: 50%; }
 
 .columnsmall { flex: 45%; }
 
-.center { display: flex; justify-content: center; align-items: center; height: 300px; width: 400px; }
+.center2 { display: flex; justify-content: space-between; align-items: center; height: 300px; width: 400px; }
+
+.center { display: block; margin-left: auto; margin-right: auto; width: 50%; }
 
 /*# sourceMappingURL=style.css.map */
