@@ -12,7 +12,7 @@ layout: home
 <img src="{{ site.baseurl }}/assets/pictures/RyanMartinPhoto1.jpg" style="max-width: 200px;"
       alt="Ryan Martin" class="center" /> <br />
 
-<p>I am a Senior Economist in the Bank of Canada's Currency department. I am interested in econometrics, industrial organization (the economics of competition), the economics of digitization and financial economics. </p> 
+<p> <span class="nobr"> I am a Senior Economist in the Bank of Canada's Currency department. I am interested in econometrics, industrial organization (the economics of competition), the economics of digitization and financial economics.  </span></p> 
       
 </div>
 
