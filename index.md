@@ -8,13 +8,12 @@
 layout: home
 ---
 
-<div class="article2cl">
-<img src="{{ site.baseurl }}/assets/pictures/RyanMartinPhoto1.jpg" style="max-width: 200px;"
-      alt="Ryan Martin" class="center" /> <br />
 
-<p> <span class="nobr"> I am a Senior Economist in the Bank of Canada's Currency department. I am interested in econometrics, industrial organization (the economics of competition), the economics of digitization and financial economics.  </span></p> 
+<p> <span class="nobr"> I am a Tech Economist in Silicon Valley. I build automated solutions to high-impact business problems. I also use my technical training to provide key insights to executives including through automated reports and dashboards. </span></p> 
+
+<p> <span class="nobr">
+I have a PhD in Economics from UCLA. I specialize in causal inference, demand estimation, pricing optimization, econometrics/statistics, and industrial organization. I have an undergraduate degree in Probability and Statistics from UCSD, an unofficial graduate minor in statistics from UCLA, and extensive training and coursework in computer science. </span></p> 
       
-</div>
 
 
 
