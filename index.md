@@ -18,8 +18,7 @@ layout: home
 
 <section class="section">
   <h2>About</h2>
-  <p>I currently lead data science for brand growth, onboarding, acquisition, and success at Faire. My work covers end-to-end model building: lead scoring, recommendations, entity resolution with LLMs, and the Airflow DAGs that keep those systems running in production.</p>
-  <p>Before Faire I led pricing and experimentation work at GoPuff and Flexport, and I was a research scientist at the Bank of Canada. Across those roles I have shipped models that move millions of dollars a year, designed experiments that leadership can trust, and translated econometrics into tools that product and finance teams actually use.</p>
+  <p>I currently am a lead data scientist for brand growth, onboarding, acquisition, and success at Faire. My work covers end-to-end model building for both batch and real-time systems. My models score leads for their lifetime values, boost new brand exploration (via RL), resolve lead identities with language processing and LLMs, measure incrementality, estimate causal responses across different customer interventions, and more. Before Faire, I was a lead on pricing and experimentation work at GoPuff and Flexport, and I was a research scientist at the Bank of Canada. Across my roles, I have shipped models that move millions of dollars a year, designed experiments that leadership can trust, and translated econometrics into tools that product and finance teams rely on.</p>
 </section>
 
 <section class="section">
