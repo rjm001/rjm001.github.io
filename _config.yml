@@ -10,6 +10,7 @@ show_excerpts: false
 header_pages:
   - cv.md
   - about.md
+  - demos.md
 
 minima:
   date_format: "%b %-d, %Y"

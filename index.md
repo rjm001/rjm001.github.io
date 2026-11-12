@@ -57,3 +57,21 @@ layout: home
   </div>
   <p class="section-link"><a href="{{ '/resume/' | relative_url }}">Full experience and education →</a></p>
 </section>
+
+<section class="section">
+  <h2>Interactive tools</h2>
+  <div class="card-grid card-grid-2">
+    <article class="card">
+      <p class="card-meta">Costly search</p>
+      <h3>Search-ranking welfare</h3>
+      <p>A stylized sequential-search toy: change how an OTA orders hotels and watch demand and consumer surplus move.</p>
+      <p class="section-link"><a href="{{ '/demos/' | relative_url }}#ranking">Open the toy →</a></p>
+    </article>
+    <article class="card">
+      <p class="card-meta">Marketplace causal inference</p>
+      <h3>Incrementality vs. cannibalization</h3>
+      <p>Promote a brand, then split naive lift into net-new orders and orders stolen from substitutes.</p>
+      <p class="section-link"><a href="{{ '/demos/' | relative_url }}#incrementality">Open the toy →</a></p>
+    </article>
+  </div>
+</section>
