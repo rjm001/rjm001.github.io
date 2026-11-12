@@ -1,60 +1,25 @@
 title: Ryan James Martin
-#author:
-#  name: Ryan Martin
-#  email: ryan.j.martin1@gmail.com
-# description: I am a Senior Economist in the Bank of Canada's Currency department. I am interested in econometrics, industrial organization (the economics of competition), the economics of digitization and financial economics.
+author:
+  name: Ryan James Martin
+  email: Ryan.J.Martin1@gmail.com
+description: Senior Applied AI/ML Scientist in San Francisco. Causal inference, production ML, pricing, and incrementality. PhD in Economics, UCLA.
+url: https://rjm001.github.io
 
-show_excerpts: false # set to true to show excerpts on the homepage
+show_excerpts: false
 
-# Minima date format
-# refer to https://shopify.github.io/liquid/filters/date/ if you want to customize this
+header_pages:
+  - cv.md
+  - about.md
+
 minima:
   date_format: "%b %-d, %Y"
   skin: classic
-
-  # generate social links in footer
   social_links:
     linkedin: ryan-martin-phd-262264112
-    #twitter: jekyllrb
-    github:  rjm001
-    # devto: jekyll
-    # dribbble: jekyll
-    # facebook: jekyll
-    # flickr:   jekyll
-    # instagram: jekyll
-    
-    # pinterest: jekyll
-    # youtube: jekyll
-    # youtube_channel: UC8CXR0-3I70i1tfPg1PAE1g
-    # youtube_channel_name: CloudCannon
-    # telegram: jekyll
-    # googleplus: +jekyll
-    # microdotblog: jekyll
-    # keybase: jekyll
+    github: rjm001
 
-    # Mastodon instances
-    # mastodon:
-    # - username: jekyll
-    #   instance: example.com
-    # - username: jekyll2
-    #   instance: example.com
-
-    # GitLab instances
-    # gitlab:
-    # - username: jekyll
-    #   instance: example.com
-    # - username: jekyll2
-    #   instance: example.com
-
-# If you want to link only specific pages in your header, uncomment
-# this and add the path to the pages in order as they should show up
-#header_pages:
-# - about.md
-# - cv.md
-
-# Build settings
 theme: minima
 
 plugins:
- - jekyll-feed
- - jekyll-seo-tag
+  - jekyll-feed
+  - jekyll-seo-tag
