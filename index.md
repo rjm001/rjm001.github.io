@@ -59,7 +59,7 @@ layout: home
 
 <section class="section">
   <h2>Interactive tools</h2>
-  <div class="card-grid card-grid-2">
+  <div class="card-grid">
     <article class="card">
       <p class="card-meta">Costly search</p>
       <h3>Search-ranking welfare</h3>
@@ -71,6 +71,24 @@ layout: home
       <h3>Incrementality vs. cannibalization</h3>
       <p>Promote a brand, then split naive lift into net-new orders and orders stolen from substitutes.</p>
       <p class="section-link"><a href="{{ '/demos/' | relative_url }}#incrementality">Open the toy →</a></p>
+    </article>
+    <article class="card">
+      <p class="card-meta">Ad auctions</p>
+      <h3>VCG vs. GSP</h3>
+      <p>One slot, they are the same second-price auction. Several slots, GSP and VCG prices diverge unless GSP bids are in equilibrium.</p>
+      <p class="section-link"><a href="{{ '/demos/' | relative_url }}#auctions">Open the toy →</a></p>
+    </article>
+    <article class="card">
+      <p class="card-meta">Marketing mix</p>
+      <h3>Mixed-media modeling</h3>
+      <p>Shift TV, search, social, and email spend. Adstock and saturation change contribution and the ROI of the next dollar.</p>
+      <p class="section-link"><a href="{{ '/demos/' | relative_url }}#mmm">Open the toy →</a></p>
+    </article>
+    <article class="card">
+      <p class="card-meta">Causal ML</p>
+      <h3>Double ML CATEs</h3>
+      <p>A promo is assigned more often to high-spend customers. See how naive ATE, double ML, and true heterogeneous effects compare.</p>
+      <p class="section-link"><a href="{{ '/demos/' | relative_url }}#dml">Open the toy →</a></p>
     </article>
   </div>
 </section>

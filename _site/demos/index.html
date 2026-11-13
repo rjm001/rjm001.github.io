@@ -1,36 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Demos | Ryan James Martin</title>
-  <link rel="stylesheet" href="/assets/css/style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/assets/css/site.css">
-</head>
-<body>
-<header class="site-header">
-  <div class="wrapper header-inner">
-    <a class="site-title" rel="author" href="/">Ryan James Martin</a>
-    <nav class="site-nav">
-      <input type="checkbox" id="nav-trigger" class="nav-trigger" />
-      <label for="nav-trigger"><span class="menu-icon"><svg viewBox="0 0 18 15" width="18px" height="15px"><path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516z"/></svg></span></label>
-      <div class="trigger">
-        <a class="page-link" href="/">Home</a>
-        <a class="page-link" href="/resume/">Resume</a>
-        <a class="page-link" href="/research/">Research</a>
-        <a class="page-link" href="/demos/">Demos</a>
-      </div>
-    </nav>
-  </div>
-</header>
-<main class="page-content" aria-label="Content">
-  <div class="wrapper wrapper-wide">
-    <article class="post"><header class="post-header"><h1 class="post-title">Demos</h1></header><div class="post-content">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demos</title>
+<link rel="stylesheet" href="/assets/css/style.css">
+<link rel="stylesheet" href="/assets/css/site.css">
+</head><body>
+<main class="page-content"><div class="wrapper wrapper-wide">
+<article class="post"><div class="post-content">
 
-<p class="lede">Two browser toys for the problems I work on: how ranking changes consumer surplus under costly search, and how a brand promotion’s “lift” splits into incrementality versus cannibalization. Both are stylized teaching models, not production estimates.</p>
+<p class="lede">Browser toys for problems I work on: costly-search ranking, incrementality versus cannibalization, VCG vs. GSP, mixed-media response, and heterogeneous effects with double ML. These are stylized teaching models, not production estimates.</p>
 
 <section id="ranking" class="demo">
   <h2>Search-ranking welfare</h2>
@@ -102,19 +80,171 @@
   </div>
 </section>
 
-<script src="/assets/js/demos.js"></script>
+<section id="auctions" class="demo">
+  <h2>VCG vs. GSP ad auctions</h2>
+  <p>Advertisers rank by score = <strong>pCTR × bid</strong>, where bid is a max CPC implied by <strong>tROAS</strong>: bid = pCTO × pOV / tROAS. Value per click is expected order value, pCTO × pOV. Slots have decaying position CTRs, so the top ad is worth more clicks.</p>
+  <p><strong>GSP</strong> charges the winner of slot <em>i</em> the next advertiser’s score on every click in that slot. <strong>VCG</strong> charges the externality: only the extra clicks you take from people below you. With <strong>one slot</strong> those rules are the same second-price auction. With <strong>several slots</strong> they differ if everyone bids the same tROAS CPC. In a locally envy-free Nash equilibrium of GSP, bids are shaded until GSP prices equal VCG—so the mechanisms agree again.</p>
 
-</div></article>
+  <div class="demo-controls">
+    <label class="demo-field">
+      <span>Ad slots <em id="auc-slots-label">1</em></span>
+      <input id="auc-slots" type="range" min="1" max="5" step="1" value="1">
+    </label>
+    <label class="demo-check">
+      <input id="auc-eq" type="checkbox">
+      GSP envy-free equilibrium (prices match VCG)
+    </label>
   </div>
-</main>
-<footer class="site-footer h-card">
-  <div class="wrapper footer-inner">
-    <div class="footer-copy">
-      <p class="p-name">Ryan James Martin</p>
-      <a class="u-email" href="mailto:Ryan.J.Martin1@gmail.com">Ryan.J.Martin1@gmail.com</a>
-      <p class="footer-note">San Francisco · Applied AI/ML · Causal inference</p>
+
+  <p class="demo-caption" id="auc-verdict"></p>
+  <div class="stat-grid" id="auc-stats"></div>
+  <div class="demo-split">
+    <div>
+      <h3>Total price and advertiser surplus</h3>
+      <div id="auc-bars" class="chart"></div>
+    </div>
+    <div>
+      <h3>Who wins which slot</h3>
+      <div id="auc-alloc" class="chart"></div>
     </div>
   </div>
-</footer>
-</body>
-</html>
+  <div class="table-wrap">
+    <table class="demo-table" id="auc-table"></table>
+  </div>
+</section>
+
+<section id="mmm" class="demo">
+  <h2>Mixed-media marketing</h2>
+  <p>A marketing-mix model maps spend by channel into sales. Two frictions matter: <strong>adstock</strong> (today’s spend still works next week) and <strong>saturation</strong> (the next dollar buys less than the last). This toy is a steady-state Hill/adstock response: move weekly budgets and compare contribution, total sales, and <strong>marginal ROI</strong>. Saturated channels look good on average ROI and bad on the margin.</p>
+
+  <div class="demo-controls demo-controls-4">
+    <label class="demo-field">
+      <span>TV <em id="mmm-tv-label">$80k</em></span>
+      <input id="mmm-tv" type="range" min="0" max="200" step="5" value="80">
+    </label>
+    <label class="demo-field">
+      <span>Paid search <em id="mmm-search-label">$50k</em></span>
+      <input id="mmm-search" type="range" min="0" max="200" step="5" value="50">
+    </label>
+    <label class="demo-field">
+      <span>Social <em id="mmm-social-label">$35k</em></span>
+      <input id="mmm-social" type="range" min="0" max="200" step="5" value="35">
+    </label>
+    <label class="demo-field">
+      <span>Email <em id="mmm-email-label">$15k</em></span>
+      <input id="mmm-email" type="range" min="0" max="200" step="5" value="15">
+    </label>
+  </div>
+
+  <p class="demo-caption" id="mmm-verdict"></p>
+  <div class="stat-grid" id="mmm-stats"></div>
+  <div class="demo-split">
+    <div>
+      <h3>Sales contribution by channel</h3>
+      <div id="mmm-stack" class="chart"></div>
+    </div>
+    <div>
+      <h3>Marginal ROI (next $1k)</h3>
+      <div id="mmm-mroi" class="chart"></div>
+    </div>
+  </div>
+</section>
+
+<section id="dml" class="demo">
+  <h2>Heterogeneous effects with double ML</h2>
+  <p>Treatment <em>T</em> (a promo) is not random: people with higher prior spend are more likely to get it, and they also buy more anyway. A naive treated-minus-control gap therefore mixes <strong>selection</strong> with the true effect. <strong>Double / debiased ML</strong> residualizes outcome and treatment on covariates with flexible models, then regresses residuals on residuals. That estimates the ATE, and interacting the residual treatment with a feature estimates a CATE: who benefits more.</p>
+  <p class="demo-note">The toy draws a fresh sample of 800 customers. “Prior spend” is the covariate. Ground truth is known because we simulated it.</p>
+
+  <div class="demo-controls">
+    <label class="demo-field">
+      <span>Confounding <em id="dml-conf-label">1.2</em></span>
+      <input id="dml-conf" type="range" min="0" max="2.4" step="0.1" value="1.2">
+    </label>
+    <label class="demo-field">
+      <span>Heterogeneity <em id="dml-het-label">1.0</em></span>
+      <input id="dml-het" type="range" min="0" max="2.5" step="0.1" value="1.0">
+    </label>
+  </div>
+
+  <p class="demo-caption" id="dml-verdict"></p>
+  <div class="stat-grid" id="dml-stats"></div>
+  <div>
+    <h3>CATE vs. prior spend</h3>
+    <div id="dml-chart" class="chart"></div>
+    <p class="demo-caption">Gold = true τ(x). Navy = double-ML CATE. Dashed = naive ATE (constant, and usually wrong).</p>
+  </div>
+</section>
+
+<section id="glossary" class="demo glossary">
+  <h2>Glossary</h2>
+  <dl>
+    <div>
+      <dt>CPC</dt>
+      <dd>Cost per click. What the advertiser pays when someone clicks the ad. In this toy the max CPC bid is pCTO × pOV / tROAS.</dd>
+    </div>
+    <div>
+      <dt>CTR</dt>
+      <dd>Click-through rate. Clicks divided by impressions. Position CTRs here are relative click rates by slot (top ads get more clicks).</dd>
+    </div>
+    <div>
+      <dt>GMV</dt>
+      <dd>Gross merchandise value. Dollar volume of orders, before taking out ads cost or take rate.</dd>
+    </div>
+    <div>
+      <dt>GSP</dt>
+      <dd>Generalized second-price auction. Rank ads by score; the winner of a slot pays a price tied to the next advertiser’s score on every click in that slot.</dd>
+    </div>
+    <div>
+      <dt>OTA</dt>
+      <dd>Online travel agency. The setting of the ranking-and-welfare paper and the hotel-search toy.</dd>
+    </div>
+    <div>
+      <dt>pCTO</dt>
+      <dd>Predicted click-to-order. Probability that a click becomes an order.</dd>
+    </div>
+    <div>
+      <dt>pCTR</dt>
+      <dd>Predicted click-through rate. Probability that an impression (in a given slot) becomes a click, before applying the slot’s position multiplier.</dd>
+    </div>
+    <div>
+      <dt>pOV</dt>
+      <dd>Predicted order value. Expected dollars of GMV if the click converts.</dd>
+    </div>
+    <div>
+      <dt>tROAS</dt>
+      <dd>Target return on ad spend. The advertiser’s required GMV per dollar of spend. A tROAS of 2× means they will not pay more than half of expected order value for the click.</dd>
+    </div>
+    <div>
+      <dt>ATE</dt>
+      <dd>Average treatment effect. The mean of Y(1) − Y(0) in the population. One number, not who benefits.</dd>
+    </div>
+    <div>
+      <dt>CATE</dt>
+      <dd>Conditional average treatment effect, τ(x) = E[Y(1) − Y(0) | X = x]. How the effect varies with covariates.</dd>
+    </div>
+    <div>
+      <dt>DML</dt>
+      <dd>Double / debiased machine learning (Chernozhukov et al.). Residualize Y and T on X with ML, then regress residuals on residuals so regularization bias does not infect the causal estimate.</dd>
+    </div>
+    <div>
+      <dt>HTE</dt>
+      <dd>Heterogeneous treatment effects. The treatment is not constant across people; CATE is one way to write that.</dd>
+    </div>
+    <div>
+      <dt>MMM</dt>
+      <dd>Marketing mix / mixed-media model. A time-series (often Bayesian) model of sales as a function of channel spend, typically with adstock and saturation.</dd>
+    </div>
+    <div>
+      <dt>VCG</dt>
+      <dd>Vickrey–Clarke–Groves auction. Each winner pays the externality they impose on others: the extra clicks taken from advertisers who would have ranked below them.</dd>
+    </div>
+    <div>
+      <dt>Adstock</dt>
+      <dd>Carryover of media: spend this week still affects sales in later weeks. Higher adstock means a more persistent channel (often TV).</dd>
+    </div>
+  </dl>
+</section>
+
+<script src="/assets/js/demos.js"></script>
+
+</div></article></div></main></body></html>

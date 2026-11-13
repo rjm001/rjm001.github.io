@@ -129,6 +129,70 @@
     node.appendChild(legend);
   }
 
+  function lineChart(node, lines, opts) {
+    const w = 640;
+    const h = 240;
+    const pad = { l: 44, r: 16, t: 14, b: 36 };
+    const xs = lines.flatMap((ln) => ln.points.map((p) => p.x));
+    const ys = lines.flatMap((ln) => ln.points.map((p) => p.y));
+    const xmin = opts.xmin != null ? opts.xmin : Math.min(...xs);
+    const xmax = opts.xmax != null ? opts.xmax : Math.max(...xs);
+    const ymin = opts.ymin != null ? opts.ymin : Math.min(0, ...ys);
+    const ymax = opts.ymax != null ? opts.ymax : Math.max(...ys);
+    const sx = (x) => pad.l + ((w - pad.l - pad.r) * (x - xmin)) / (xmax - xmin || 1);
+    const sy = (y) =>
+      h - pad.b - ((h - pad.t - pad.b) * (y - ymin)) / (ymax - ymin || 1);
+    const parts = [
+      `<svg viewBox="0 0 ${w} ${h}" class="line-svg" role="img">`,
+      `<line x1="${pad.l}" y1="${sy(0)}" x2="${w - pad.r}" y2="${sy(0)}" stroke="#ddd6c8"/>`,
+      `<line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${h - pad.b}" stroke="#ddd6c8"/>`,
+      `<text x="${pad.l}" y="${h - 10}" fill="#5c6570" font-size="11">${opts.xLabel || ""}</text>`,
+    ];
+    lines.forEach((ln) => {
+      const d = ln.points
+        .map((p, i) => (i ? "L" : "M") + sx(p.x).toFixed(1) + "," + sy(p.y).toFixed(1))
+        .join(" ");
+      parts.push(
+        `<path d="${d}" fill="none" stroke="${ln.color}" stroke-width="${ln.dash ? 1.6 : 2.4}" stroke-dasharray="${ln.dash || "none"}"/>`
+      );
+    });
+    parts.push("</svg>");
+    node.innerHTML = parts.join("");
+  }
+
+  function sigmoid(z) {
+    return 1 / (1 + Math.exp(-Math.max(-20, Math.min(20, z))));
+  }
+
+  function binSmooth(x, y, bins) {
+    const n = bins.length - 1;
+    const sum = Array(n).fill(0);
+    const cnt = Array(n).fill(0);
+    for (let i = 0; i < x.length; i++) {
+      let b = n - 1;
+      for (let j = 0; j < n; j++) {
+        if (x[i] < bins[j + 1]) {
+          b = j;
+          break;
+        }
+      }
+      sum[b] += y[i];
+      cnt[b] += 1;
+    }
+    const pred = Array(x.length);
+    for (let i = 0; i < x.length; i++) {
+      let b = n - 1;
+      for (let j = 0; j < n; j++) {
+        if (x[i] < bins[j + 1]) {
+          b = j;
+          break;
+        }
+      }
+      pred[i] = cnt[b] ? sum[b] / cnt[b] : 0;
+    }
+    return pred;
+  }
+
   // --- Search ranking -------------------------------------------------
   const HOTELS = [
     { id: "harbor", name: "Harbor Inn", quality: 126, price: 98 },
@@ -440,6 +504,430 @@
     );
   }
 
+  // --- VCG vs GSP -----------------------------------------------------
+  const SEARCHES = 1000;
+  const POS_CTR = [1, 0.55, 0.32, 0.19, 0.12];
+  const ADVERTISERS = [
+    { name: "Northwind", pCTR: 0.08, pCTO: 0.12, pOV: 85, tROAS: 2.5 },
+    { name: "Cedar Co", pCTR: 0.05, pCTO: 0.18, pOV: 120, tROAS: 3.0 },
+    { name: "Atelier", pCTR: 0.11, pCTO: 0.06, pOV: 55, tROAS: 1.8 },
+    { name: "Quilt", pCTR: 0.04, pCTO: 0.22, pOV: 95, tROAS: 4.0 },
+    { name: "Ridge", pCTR: 0.07, pCTO: 0.09, pOV: 70, tROAS: 2.0 },
+    { name: "Helm", pCTR: 0.03, pCTO: 0.15, pOV: 150, tROAS: 2.2 },
+  ].map((a) => {
+    const valueCpc = a.pCTO * a.pOV;
+    const bidCpc = valueCpc / a.tROAS;
+    return Object.assign({}, a, {
+      valueCpc,
+      bidCpc,
+      score: a.pCTR * bidCpc,
+    });
+  });
+
+  function runAuction(slots, equilibrium) {
+    const ranked = ADVERTISERS.slice().sort((a, b) => b.score - a.score);
+    const m = Math.min(slots, ranked.length);
+    const alpha = POS_CTR.slice(0, m);
+    const s = ranked.map((a) => a.score);
+    s.push(0);
+
+    function vcgPay(j) {
+      let pay = 0;
+      for (let k = j; k < m; k++) {
+        const aNext = k + 1 < m ? alpha[k + 1] : 0;
+        pay += SEARCHES * s[k + 1] * (alpha[k] - aNext);
+      }
+      return pay;
+    }
+
+    return ranked.map((a, j) => {
+      const winner = j < m;
+      const clicks = winner ? SEARCHES * a.pCTR * alpha[j] : 0;
+      const value = clicks * a.valueCpc;
+      const payVcg = winner ? vcgPay(j) : 0;
+      const payGspNaive = winner ? SEARCHES * alpha[j] * s[j + 1] : 0;
+      const payGsp = equilibrium ? payVcg : payGspNaive;
+      return {
+        a,
+        slot: winner ? j + 1 : null,
+        clicks,
+        value,
+        payGsp,
+        payVcg,
+        surplusGsp: value - payGsp,
+        surplusVcg: value - payVcg,
+      };
+    });
+  }
+
+  function renderAuctions() {
+    if (!$("auc-slots")) return;
+    const slots = Number($("auc-slots").value);
+    const equilibrium = $("auc-eq").checked;
+    $("auc-slots-label").textContent = String(slots);
+
+    const rows = runAuction(slots, equilibrium);
+    const revGsp = rows.reduce((s, r) => s + r.payGsp, 0);
+    const revVcg = rows.reduce((s, r) => s + r.payVcg, 0);
+    const surGsp = rows.reduce((s, r) => s + r.surplusGsp, 0);
+    const surVcg = rows.reduce((s, r) => s + r.surplusVcg, 0);
+    const same = Math.abs(revGsp - revVcg) < 0.05;
+
+    let verdict;
+    if (slots === 1) {
+      verdict =
+        "One ad slot: GSP and VCG are the same second-price auction. The winner pays the second-highest score, regardless of the equilibrium toggle.";
+    } else if (equilibrium) {
+      verdict =
+        "Several slots, but GSP bids are the locally envy-free Nash vector. Those bids are shaded so GSP prices equal VCG prices. Allocation and payments match.";
+    } else {
+      const extra = ((revGsp - revVcg) / (revVcg || 1)) * 100;
+      verdict =
+        "Several slots with the same tROAS CPCs in both mechanisms: GSP charges the next score on every click in the slot, VCG only on incremental clicks. Publisher revenue is " +
+        extra.toFixed(0) +
+        "% higher under GSP here. That is a mechanical gap, not an equilibrium prediction.";
+    }
+    $("auc-verdict").textContent = verdict;
+
+    renderStats($("auc-stats"), [
+      {
+        label: "Total ad price (GSP)",
+        value: money(revGsp, 0),
+        sub: same ? "Equals VCG" : money(revGsp - revVcg, 0) + " vs VCG",
+      },
+      {
+        label: "Total ad price (VCG)",
+        value: money(revVcg, 0),
+        sub: SEARCHES.toLocaleString() + " searches",
+      },
+      {
+        label: "Advertiser surplus",
+        value: money(surGsp, 0) + " / " + money(surVcg, 0),
+        sub: "GSP / VCG",
+      },
+    ]);
+
+    hbarChart(
+      $("auc-bars"),
+      [
+        {
+          label: "GSP revenue",
+          value: revGsp,
+          display: money(revGsp, 0),
+          color: "#0b3d91",
+        },
+        {
+          label: "VCG revenue",
+          value: revVcg,
+          display: money(revVcg, 0),
+          color: "#7a93c2",
+        },
+        {
+          label: "GSP surplus",
+          value: surGsp,
+          display: money(surGsp, 0),
+          color: "#c45c26",
+        },
+        {
+          label: "VCG surplus",
+          value: surVcg,
+          display: money(surVcg, 0),
+          color: "#d9a441",
+        },
+      ],
+      { max: Math.max(revGsp, revVcg, surGsp, surVcg, 1) }
+    );
+
+    hbarChart(
+      $("auc-alloc"),
+      rows.map((r) => ({
+        label: r.a.name,
+        value: r.clicks,
+        display: r.slot ? "slot " + r.slot : "unallocated",
+        color: r.slot ? "var(--accent)" : "#c5c0b5",
+      })),
+      { max: Math.max(...rows.map((r) => r.clicks), 1) }
+    );
+
+    const table = $("auc-table");
+    const header =
+      "<thead><tr>" +
+      [
+        "Advertiser",
+        "pCTR",
+        "pCTO",
+        "pOV",
+        "tROAS",
+        "CPC bid",
+        "Score",
+        "Slot",
+        "GSP price",
+        "VCG price",
+        "GSP surplus",
+        "VCG surplus",
+      ]
+        .map((h) => "<th>" + h + "</th>")
+        .join("") +
+      "</tr></thead>";
+    const body = rows
+      .map((r) => {
+        const cells = [
+          r.a.name,
+          r.a.pCTR.toFixed(2),
+          r.a.pCTO.toFixed(2),
+          money(r.a.pOV, 0),
+          r.a.tROAS.toFixed(1) + "×",
+          money(r.a.bidCpc, 2),
+          money(r.a.score, 3),
+          r.slot || "—",
+          money(r.payGsp, 0),
+          money(r.payVcg, 0),
+          money(r.surplusGsp, 0),
+          money(r.surplusVcg, 0),
+        ];
+        return (
+          "<tr" +
+          (r.slot ? "" : ' class="muted-row"') +
+          ">" +
+          cells.map((c) => "<td>" + c + "</td>").join("") +
+          "</tr>"
+        );
+      })
+      .join("");
+    table.innerHTML = header + "<tbody>" + body + "</tbody>";
+  }
+
+  // --- Mixed media marketing ------------------------------------------
+  const BASELINE_SALES = 380;
+  const MEDIA = [
+    { id: "tv", name: "TV", lambda: 0.72, k: 95, shape: 1.35, beta: 520, color: "#0b3d91" },
+    { id: "search", name: "Paid search", lambda: 0.18, k: 42, shape: 1.05, beta: 240, color: "#c45c26" },
+    { id: "social", name: "Social", lambda: 0.34, k: 58, shape: 1.55, beta: 175, color: "#d9a441" },
+    { id: "email", name: "Email", lambda: 0.08, k: 16, shape: 2.1, beta: 85, color: "#7a93c2" },
+  ];
+
+  function hill(x, k, shape, beta) {
+    if (x <= 0) return 0;
+    const xs = Math.pow(x, shape);
+    const ks = Math.pow(k, shape);
+    return (beta * xs) / (ks + xs);
+  }
+
+  function mediaResponse(channel, spendK) {
+    const effective = spendK / (1 - channel.lambda);
+    const contrib = hill(effective, channel.k, channel.shape, channel.beta);
+    const contribNext = hill(
+      (spendK + 1) / (1 - channel.lambda),
+      channel.k,
+      channel.shape,
+      channel.beta
+    );
+    return { contrib, mroi: contribNext - contrib, spendK };
+  }
+
+  function renderMmm() {
+    if (!$("mmm-tv")) return;
+    const spends = {
+      tv: Number($("mmm-tv").value),
+      search: Number($("mmm-search").value),
+      social: Number($("mmm-social").value),
+      email: Number($("mmm-email").value),
+    };
+    $("mmm-tv-label").textContent = "$" + spends.tv + "k";
+    $("mmm-search-label").textContent = "$" + spends.search + "k";
+    $("mmm-social-label").textContent = "$" + spends.social + "k";
+    $("mmm-email-label").textContent = "$" + spends.email + "k";
+
+    const rows = MEDIA.map((ch) =>
+      Object.assign({ ch }, mediaResponse(ch, spends[ch.id]))
+    );
+    const mediaSales = rows.reduce((s, r) => s + r.contrib, 0);
+    const totalSales = BASELINE_SALES + mediaSales;
+    const totalSpend = rows.reduce((s, r) => s + r.spendK, 0);
+    const avgRoi = totalSpend ? mediaSales / totalSpend : 0;
+    const bestMarginal = rows.slice().sort((a, b) => b.mroi - a.mroi)[0];
+    const worstMarginal = rows
+      .filter((r) => r.spendK > 0)
+      .sort((a, b) => a.mroi - b.mroi)[0];
+
+    $("mmm-verdict").textContent = worstMarginal
+      ? "At these budgets, the next $1k earns the most on " +
+        bestMarginal.ch.name +
+        " (marginal ROI " +
+        bestMarginal.mroi.toFixed(2) +
+        "×) and the least on " +
+        worstMarginal.ch.name +
+        " (" +
+        worstMarginal.mroi.toFixed(2) +
+        "×). Average ROI hides that gap."
+      : "Turn on some spend to see saturation and carryover.";
+
+    renderStats($("mmm-stats"), [
+      {
+        label: "Predicted weekly sales",
+        value: "$" + Math.round(totalSales).toLocaleString("en-US") + "k",
+        sub: "$" + BASELINE_SALES + "k baseline + $" + Math.round(mediaSales).toLocaleString("en-US") + "k media",
+      },
+      {
+        label: "Total media spend",
+        value: "$" + totalSpend + "k",
+        sub: "Average ROI " + avgRoi.toFixed(2) + "×",
+      },
+      {
+        label: "Best next dollar",
+        value: bestMarginal.ch.name,
+        sub: "Marginal ROI " + bestMarginal.mroi.toFixed(2) + "×",
+      },
+    ]);
+
+    stackedBar(
+      $("mmm-stack"),
+      [
+        {
+          label: "Baseline",
+          value: BASELINE_SALES,
+          display: "$" + BASELINE_SALES + "k",
+          color: "#c5c0b5",
+        },
+      ].concat(
+        rows.map((r) => ({
+          label: r.ch.name,
+          value: r.contrib,
+          display: "$" + r.contrib.toFixed(0) + "k",
+          color: r.ch.color,
+        }))
+      )
+    );
+
+    hbarChart(
+      $("mmm-mroi"),
+      rows.map((r) => ({
+        label: r.ch.name,
+        value: Math.max(r.mroi, 0),
+        display: r.mroi.toFixed(2) + "×",
+        color: r.ch.color,
+      })),
+      { max: Math.max(...rows.map((r) => r.mroi), 0.5) }
+    );
+  }
+
+  // --- Double ML heterogeneous effects --------------------------------
+  function renderDml() {
+    if (!$("dml-conf")) return;
+    const conf = Number($("dml-conf").value);
+    const het = Number($("dml-het").value);
+    $("dml-conf-label").textContent = conf.toFixed(1);
+    $("dml-het-label").textContent = het.toFixed(1);
+
+    const n = 800;
+    const rng = mulberry32(Math.round(1000 * conf + 17 * het + 9));
+    const x = Array(n);
+    const t = Array(n);
+    const y = Array(n);
+    const tau = Array(n);
+    for (let i = 0; i < n; i++) {
+      x[i] = rng();
+      tau[i] = 12 + het * 32 * (x[i] - 0.5);
+      const p = sigmoid(-0.35 + conf * (2.6 * x[i] - 0.9));
+      t[i] = rng() < p ? 1 : 0;
+      y[i] = 38 + 70 * x[i] + t[i] * tau[i] + 9 * gauss(rng);
+    }
+
+    const treated = y.filter((_, i) => t[i]);
+    const control = y.filter((_, i) => !t[i]);
+    const naive =
+      treated.reduce((s, v) => s + v, 0) / treated.length -
+      control.reduce((s, v) => s + v, 0) / control.length;
+    const trueAte = tau.reduce((s, v) => s + v, 0) / n;
+
+    const edges = [];
+    for (let b = 0; b <= 10; b++) edges.push(b / 10);
+    const yhat = binSmooth(x, y, edges);
+    const ehat = binSmooth(x, t, edges);
+    const yres = y.map((v, i) => v - yhat[i]);
+    const tres = t.map((v, i) => v - ehat[i]);
+
+    let z1z1 = 0;
+    let z1z2 = 0;
+    let z2z2 = 0;
+    let z1y = 0;
+    let z2y = 0;
+    for (let i = 0; i < n; i++) {
+      const xc = x[i] - 0.5;
+      const z1 = tres[i];
+      const z2 = tres[i] * xc;
+      z1z1 += z1 * z1;
+      z1z2 += z1 * z2;
+      z2z2 += z2 * z2;
+      z1y += z1 * yres[i];
+      z2y += z2 * yres[i];
+    }
+    const det = z1z1 * z2z2 - z1z2 * z1z2;
+    const a = det ? (z2z2 * z1y - z1z2 * z2y) / det : 0;
+    const b = det ? (z1z1 * z2y - z1z2 * z1y) / det : 0;
+    const dmlAte = a;
+
+    const grid = [];
+    for (let g = 0; g <= 20; g++) {
+      const xv = g / 20;
+      grid.push({
+        x: xv,
+        trueY: 12 + het * 32 * (xv - 0.5),
+        dmlY: a + b * (xv - 0.5),
+        naiveY: naive,
+      });
+    }
+
+    const bias = naive - trueAte;
+    $("dml-verdict").textContent =
+      Math.abs(het) < 0.15
+        ? "Heterogeneity is off, so the true CATE is almost flat. Double ML should still beat the naive gap if confounding is on, because it partials out prior spend."
+        : conf < 0.25
+        ? "Little confounding: even the naive gap is close to the ATE. Heterogeneity still shows up as a slope in τ(x)—high prior-spend customers gain more from the promo."
+        : "High-spend customers are both more likely to be treated and have higher baseline sales. The naive ATE is off by about $" +
+          Math.abs(bias).toFixed(1) +
+          ". Double ML residualizes that selection and recovers a CATE that rises with prior spend.";
+
+    renderStats($("dml-stats"), [
+      {
+        label: "True ATE",
+        value: "$" + trueAte.toFixed(1),
+        sub: "Known from the simulation",
+      },
+      {
+        label: "Naive treated − control",
+        value: "$" + naive.toFixed(1),
+        sub: (bias >= 0 ? "+" : "−") + "$" + Math.abs(bias).toFixed(1) + " bias",
+      },
+      {
+        label: "Double-ML ATE",
+        value: "$" + dmlAte.toFixed(1),
+        sub: "Partialled-out residual regression",
+      },
+    ]);
+
+    const spend = (xv) => 20 + 200 * xv;
+    lineChart(
+      $("dml-chart"),
+      [
+        {
+          color: "#d9a441",
+          points: grid.map((p) => ({ x: spend(p.x), y: p.trueY })),
+        },
+        {
+          color: "#0b3d91",
+          points: grid.map((p) => ({ x: spend(p.x), y: p.dmlY })),
+        },
+        {
+          color: "#888",
+          dash: "5 4",
+          points: grid.map((p) => ({ x: spend(p.x), y: p.naiveY })),
+        },
+      ],
+      { xLabel: "Prior spend ($)", ymin: -20, ymax: 50 }
+    );
+  }
+
   function bind() {
     ["rank-policy", "rank-cost", "rank-drop-top"].forEach((id) => {
       const node = $(id);
@@ -451,8 +939,24 @@
       if (node) node.addEventListener("input", renderIncrementality);
       if (node) node.addEventListener("change", renderIncrementality);
     });
+    ["auc-slots", "auc-eq"].forEach((id) => {
+      const node = $(id);
+      if (node) node.addEventListener("input", renderAuctions);
+      if (node) node.addEventListener("change", renderAuctions);
+    });
+    ["mmm-tv", "mmm-search", "mmm-social", "mmm-email"].forEach((id) => {
+      const node = $(id);
+      if (node) node.addEventListener("input", renderMmm);
+    });
+    ["dml-conf", "dml-het"].forEach((id) => {
+      const node = $(id);
+      if (node) node.addEventListener("input", renderDml);
+    });
     renderRanking();
     renderIncrementality();
+    renderAuctions();
+    renderMmm();
+    renderDml();
   }
 
   if (document.readyState === "loading") {
